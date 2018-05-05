@@ -2,6 +2,8 @@ package com.example.yurko.news;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -65,7 +67,6 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
         mProcessBar.setVisibility(View.GONE);
         Log.i(LOG_TAG, "NewsListFragment onCreateView");
 
-
         slideUpAnimation = AnimationUtils.loadAnimation(getContext(),
                 R.anim.slide_up_animation);
 
@@ -80,27 +81,46 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
                 updateNewsList(true);
             }
         });
-
         return view;
     }
 
     private void updateNewsList(boolean updateOnRequest) {
+        mEmptyList.setText("");
+
         LoaderManager loaderManager = getActivity().getSupportLoaderManager();
         Loader loader = loaderManager.getLoader(0);
+        NewsLab newsLab = NewsLab.get(getContext());
+        if(!newsLab.getNews().isEmpty()){
+            mAdapter.addAll(newsLab.getNews());
+        }
+
+        ConnectivityManager cm =
+                (ConnectivityManager)getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null &&
+                activeNetwork.isConnectedOrConnecting();
+        if (!isConnected) {
+            mProcessBar.setVisibility(View.GONE);
+            mEmptyList.setText(R.string.no_connection);
+            mSwipeRefreshLayout.setRefreshing(false);
+            if(!newsLab.getNews().isEmpty()){
+                Toast.makeText(getActivity(),R.string.no_connection,Toast.LENGTH_LONG).show();
+            }
+            return;
+        }
 
         if (updateOnRequest) {
             initAndStartLoader(loaderManager,loader);
             return;
         }
 
-        NewsLab newsLab = NewsLab.get(getContext());
         if (!newsLab.getNews().isEmpty()) {
             loaderManager.destroyLoader(0);
         } else {
             mProcessBar.setVisibility(View.VISIBLE);
             initAndStartLoader(loaderManager,loader);
         }
-
     }
 
     private void initAndStartLoader(LoaderManager loaderManager,Loader loader) {
