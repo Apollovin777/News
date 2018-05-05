@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">News</string>
+    <string name="readNews">Read news on resourse</string>
+    <string name="no_news">There is no news</string>
+</resources>
