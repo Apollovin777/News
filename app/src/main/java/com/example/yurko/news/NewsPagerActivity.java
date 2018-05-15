@@ -2,58 +2,78 @@ package com.example.yurko.news;
 
 import android.content.Context;
 import android.content.Intent;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
+import android.database.Cursor;
+
+import android.net.Uri;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
-import java.util.List;
-import java.util.UUID;
+import com.example.yurko.news.data.NewsContract;
 
-public class NewsPagerActivity extends AppCompatActivity {
 
+public class NewsPagerActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
+
+    private static final String LOG_TAG = NewsPagerActivity.class.getSimpleName();
     private static final String EXTRA_NEWSITEM_ID =
             "com.example.yurko.news.newsitem_id";
 
     private ViewPager mViewPager;
-    private List<NewsItem> mNewsItems;
+    private CursorPagerAdapter mCursorPagerAdapter;
+    private long mNewsID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_news_pager);
 
-        mViewPager = findViewById(R.id.news_view_pager);
-        mNewsItems = NewsLab.get(this).getNews();
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        mViewPager.setAdapter(new FragmentPagerAdapter(fragmentManager) {
-            @Override
-            public Fragment getItem(int position) {
-                NewsItem newsItem = mNewsItems.get(position);
-                return NewsDetailsFragment.newInstance(newsItem.getId());
-            }
+        mNewsID = getIntent().getLongExtra(EXTRA_NEWSITEM_ID,0);
 
-            @Override
-            public int getCount() {
-                return mNewsItems.size();
-            }
-        });
+        mViewPager = (ViewPager) findViewById(R.id.news_view_pager);
+        mCursorPagerAdapter = new CursorPagerAdapter(getSupportFragmentManager(), null);
 
-        UUID newsItemId = (UUID) getIntent().getSerializableExtra(EXTRA_NEWSITEM_ID);
-
-        for (int i = 0; i < mNewsItems.size(); i++) {
-            if (mNewsItems.get(i).getId().equals(newsItemId)) {
-                mViewPager.setCurrentItem(i);
-                break;
-            }
-        }
+        getSupportLoaderManager().initLoader(0,null,this);
     }
 
-    public static Intent newIntent(Context packageContext, UUID crimeId) {
+    public static Intent newIntent(Context packageContext, long newsID) {
         Intent intent = new Intent(packageContext, NewsPagerActivity.class);
-        intent.putExtra(EXTRA_NEWSITEM_ID, crimeId);
+            intent.putExtra(EXTRA_NEWSITEM_ID, newsID);
         return intent;
+    }
+
+    @NonNull
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, @Nullable Bundle args) {
+        CursorLoader loader = new CursorLoader(this,
+                NewsContract.NewsEntry.CONTENT_URI,
+                new String[]{NewsContract.NewsEntry._ID},
+                null,
+                null,
+                NewsContract.NewsEntry.COLUMN_DATE + " DESC");
+        return loader;
+    }
+
+    @Override
+    public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
+        mViewPager.setAdapter(mCursorPagerAdapter);
+        mCursorPagerAdapter.swapCursor(data);
+        if(data != null) {
+            if(data.getCount()>0) {
+                while (data.moveToNext()) {
+                    if(data.getLong(data.getColumnIndex(NewsContract.NewsEntry._ID))==mNewsID)
+                        mViewPager.setCurrentItem(data.getPosition());
+                }
+            }
+        }
+        }
+
+    @Override
+    public void onLoaderReset(@NonNull Loader<Cursor> loader) {
+        mCursorPagerAdapter.swapCursor(null);
     }
 }

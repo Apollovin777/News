@@ -26,12 +26,12 @@ public class NewsLoader extends AsyncTaskLoader<List<NewsItem>> {
         if (mUrl == null) {
             return null;
         }
-        try {
-            Thread.sleep(2000);
-        }
-        catch (InterruptedException e){
-            Log.i(LOG_TAG,e.getMessage());
-        }
+//        try {
+//            Thread.sleep(2000);
+//        }
+//        catch (InterruptedException e){
+//            Log.i(LOG_TAG,e.getMessage());
+//        }
 
         List<NewsItem> news = Utilities.fetchNews(mUrl);
         return news;

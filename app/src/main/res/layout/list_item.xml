@@ -19,11 +19,28 @@
         android:textSize="16sp"
         tools:text="Title of news item" />
 
-    <TextView
-        android:id="@+id/source"
-        android:layout_width="wrap_content"
+    <RelativeLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="#2e35fd"
-        android:textSize="12sp"
-        tools:text="www.abc.contoso.com" />
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/source"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:textColor="#2e35fd"
+            android:textSize="12sp"
+            tools:text="www.abc.contoso.com" />
+
+        <TextView
+            android:id="@+id/date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:textColor="#0b0b0b"
+            android:textSize="12sp"
+            tools:text="20-12-12 18:00" />
+    </RelativeLayout>
+
 </LinearLayout>

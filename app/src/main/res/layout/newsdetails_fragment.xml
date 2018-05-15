@@ -1,41 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context=".NewsDetails"
-    android:layout_margin="16sp">
+    android:layout_height="match_parent">
 
     <ImageView
         android:id="@+id/news_image"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:adjustViewBounds="true"
-        android:scaleType="fitCenter"
-        />
+        android:scaleType="fitCenter" />
+
     <TextView
         android:id="@+id/news_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textColor="@android:color/black"
         android:textSize="20sp"
         android:textStyle="bold"
-        android:textColor="@android:color/black"
-        app:layout_constraintTop_toBottomOf="@id/news_image"/>
+        app:layout_constraintTop_toBottomOf="@id/news_image"
+        tools:text="TITLE" />
+
     <TextView
         android:id="@+id/news_description"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="16sp"
-        app:layout_constraintTop_toBottomOf="@id/news_title"/>
+        app:layout_constraintTop_toBottomOf="@id/news_title"
+        tools:text="Description" />
 
     <TextView
         android:id="@+id/news_link"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textStyle="italic"
         android:textColor="#1590c9"
         android:textSize="16sp"
-        app:layout_constraintTop_toBottomOf="@id/news_description"/>
-
+        android:textStyle="italic"
+        app:layout_constraintTop_toBottomOf="@id/news_description"
+        tools:text="Link" />
 </android.support.constraint.ConstraintLayout>

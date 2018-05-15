@@ -11,8 +11,13 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -75,7 +80,8 @@ public class Utilities {
     private static ArrayList<NewsItem> extractNews(String jsonResponse) {
 
         ArrayList<NewsItem> news = new ArrayList<>();
-
+        //2018-05-06T17:05:24Z
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.ENGLISH);
         try {
             JSONObject rootObject = new JSONObject(jsonResponse);
             JSONArray articlesArray = rootObject.getJSONArray("articles");
@@ -90,12 +96,16 @@ public class Utilities {
 
                 String description = newsItem.getString("description");
 
+                Date date = df.parse(newsItem.getString("publishedAt").replaceAll("Z$", "+0000"));
 
-                NewsItem objectNewsItem = new NewsItem(title,source,newsUrl, urlToImage, description);
+                NewsItem objectNewsItem = new NewsItem(title,source,newsUrl, urlToImage, description,date);
                 news.add(objectNewsItem);
             }
         } catch (JSONException e) {
             Log.e(LOG_TAG, "Problem parsing the JSON results", e);
+        }
+        catch (ParseException e){
+            Log.e(LOG_TAG, "Problem parsing Date", e);
         }
         return news;
     }
