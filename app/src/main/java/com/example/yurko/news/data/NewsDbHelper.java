@@ -11,7 +11,7 @@ public class NewsDbHelper extends SQLiteOpenHelper {
 
     public static final String LOG_TAG = NewsDbHelper.class.getSimpleName();
     private static final String DATABASE_NAME = "news.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
 
 
     public NewsDbHelper(Context context) {
@@ -28,7 +28,9 @@ public class NewsDbHelper extends SQLiteOpenHelper {
                 + NewsEntry.COLUMN_URL + " TEXT, "
                 + NewsEntry.COLUMN_URLTOIMAGE + " TEXT, "
                 + NewsEntry.COLUMN_SOURCE + " TEXT, "
-                + NewsEntry.COLUMN_DATE + " TEXT);";
+                + NewsEntry.COLUMN_DATE + " TEXT, "
+                + NewsEntry.COLUMN_CATEGORY + " TEXT, "
+                + NewsEntry.COLUMN_ISREAD + " INTEGER);";
 
         db.execSQL(SQL_CREATE_NEWS_TABLE);
     }

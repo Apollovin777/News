@@ -22,6 +22,7 @@ public class NewsListActivity extends SingleFragmentActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.i(LOG_TAG,"NewsListActivity onCreate");
+
     }
 
     @Override

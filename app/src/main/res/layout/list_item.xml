@@ -4,10 +4,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingEnd="16dp"
-    android:paddingLeft="16dp"
-    android:paddingRight="16dp"
-    android:paddingStart="16dp">
+    android:isScrollContainer="false"
+    android:background="@drawable/list_divider"
+    android:layout_margin="5dp"
+    android:padding="10dp">
 
     <TextView
         android:id="@+id/title"
@@ -42,5 +42,14 @@
             android:textSize="12sp"
             tools:text="20-12-12 18:00" />
     </RelativeLayout>
+
+    <TextView
+        android:id="@+id/category"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:textColor="#fd2e7a"
+        android:textSize="12sp"
+        tools:text="sport" />
 
 </LinearLayout>

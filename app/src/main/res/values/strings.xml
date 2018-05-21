@@ -3,4 +3,16 @@
     <string name="readNews">Read news on resourse</string>
     <string name="no_news">There is no news</string>
     <string name="no_connection">No Internet connection.</string>
+    <string name="news_category">News category</string>
+    <string-array name="cat_spinner_array">
+        <item>Top news</item>
+        <item>Technology</item>
+        <item>Sports</item>
+        <item>Science</item>
+        <item>Health</item>
+        <item>Entertainment</item>
+        <item>Business</item>
+        <item>All news</item>
+    </string-array>
+
 </resources>
