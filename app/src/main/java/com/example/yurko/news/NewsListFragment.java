@@ -171,11 +171,6 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        ContentValues values = new ContentValues();
-        values.put(NewsEntry.COLUMN_ISREAD, 1);
-        getActivity().getContentResolver().update(
-                Uri.withAppendedPath(NewsEntry.CONTENT_URI,String.valueOf(id))
-                , values, null, null);
         Intent intent = NewsPagerActivity.newIntent(getActivity(), id);
         startActivity(intent);
     }

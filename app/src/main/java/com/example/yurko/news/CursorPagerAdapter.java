@@ -1,6 +1,8 @@
 package com.example.yurko.news;
 
+import android.content.ContentValues;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -25,6 +27,7 @@ public class CursorPagerAdapter extends FragmentStatePagerAdapter {
         if (mCursor.moveToPosition(position)) {
             Bundle arguments = new Bundle();
             arguments.putLong(NewsDetailsFragment.ARG_NEWSITEM_ID, mCursor.getLong(mCursor.getColumnIndex(NewsProvider.COL_ID)));
+
             NewsDetailsFragment fragment = NewsDetailsFragment.newInstance(
                     mCursor.getLong(mCursor.getColumnIndex(NewsContract.NewsEntry._ID)));
             return fragment;

@@ -1,5 +1,6 @@
 package com.example.yurko.news;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -15,6 +16,7 @@ import android.support.v4.content.Loader;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.example.yurko.news.data.NewsContract;
 
@@ -29,6 +31,7 @@ public class NewsPagerActivity extends AppCompatActivity implements LoaderManage
     private ViewPager mViewPager;
     private CursorPagerAdapter mCursorPagerAdapter;
     private long mNewsID;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,16 +69,21 @@ public class NewsPagerActivity extends AppCompatActivity implements LoaderManage
 
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
-        mViewPager.setAdapter(mCursorPagerAdapter);
-        mCursorPagerAdapter.swapCursor(data);
-        if (data != null) {
-            if (data.getCount() > 0) {
-                while (data.moveToNext()) {
-                    if (data.getLong(data.getColumnIndex(NewsContract.NewsEntry._ID)) == mNewsID)
-                        mViewPager.setCurrentItem(data.getPosition());
+        Log.i(LOG_TAG, " testing NewsPagerActivity onLoadFinished");
+
+            mViewPager.setAdapter(mCursorPagerAdapter);
+            mCursorPagerAdapter.swapCursor(data);
+            if (data != null) {
+                if (data.getCount() > 0) {
+                    while (data.moveToNext()) {
+                        if (data.getLong(data.getColumnIndex(NewsContract.NewsEntry._ID)) == mNewsID)
+                            mViewPager.setCurrentItem(data.getPosition());
+                    }
                 }
             }
-        }
+
+            getSupportLoaderManager().getLoader(0).abandon();
+
     }
 
     @Override
