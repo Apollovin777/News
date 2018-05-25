@@ -37,11 +37,29 @@ public class NewsPagerActivity extends AppCompatActivity implements LoaderManage
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_news_pager);
+        final Context context = this;
 
         mNewsID = getIntent().getLongExtra(EXTRA_NEWSITEM_ID, 0);
 
         mViewPager = (ViewPager) findViewById(R.id.news_view_pager);
         mCursorPagerAdapter = new CursorPagerAdapter(getSupportFragmentManager(), null);
+
+        mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            public void onPageScrollStateChanged(int state) {
+
+            }
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+
+            public void onPageSelected(int position) {
+                long id = mCursorPagerAdapter.getItemId(position);
+                Log.i(LOG_TAG, "NewsPagerActivity onPageSelected " + String.valueOf(id));
+                    ContentValues values = new ContentValues();
+                    values.put(NewsContract.NewsEntry.COLUMN_ISREAD, 1);
+                context.getContentResolver().update(
+                            Uri.withAppendedPath(NewsContract.NewsEntry.CONTENT_URI, String.valueOf(id))
+                           , values, null, null);
+            }
+        });
 
         getSupportLoaderManager().initLoader(0, null, this);
     }

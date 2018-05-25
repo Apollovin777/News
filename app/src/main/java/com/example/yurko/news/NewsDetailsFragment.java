@@ -2,7 +2,9 @@ package com.example.yurko.news;
 
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.Loader;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -35,12 +37,25 @@ public class NewsDetailsFragment extends Fragment  {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mNewsItemId = getArguments().getLong(ARG_NEWSITEM_ID);
+    }
 
-        ContentValues values = new ContentValues();
-        values.put(NewsContract.NewsEntry.COLUMN_ISREAD, 1);
-        getActivity().getContentResolver().update(
-                Uri.withAppendedPath(NewsContract.NewsEntry.CONTENT_URI,String.valueOf(mNewsItemId))
-                , values, null, null);
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        Log.i(LOG_TAG, "NewsDetailsFragment onAttach " + String.valueOf(mNewsItemId));
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.i(LOG_TAG, "NewsDetailsFragment onStart " + String.valueOf(mNewsItemId));
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.i(LOG_TAG, "NewsDetailsFragment onResume " + String.valueOf(mNewsItemId));
+
     }
 
     @Nullable

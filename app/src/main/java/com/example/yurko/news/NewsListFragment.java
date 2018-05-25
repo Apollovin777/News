@@ -10,6 +10,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.database.DataSetObserver;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -23,7 +24,8 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -43,20 +45,22 @@ import com.example.yurko.news.data.NewsContract;
 
 import java.net.URI;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
 public class NewsListFragment extends Fragment implements AdapterView.OnItemClickListener {
 
     private static final String LOG_TAG = "testing";
 
-    private ListView mListView;
+    private RecyclerView mRecyclerView;
     private ProgressBar mProcessBar;
-    private NewsCursorAdapter mNewsCursorAdapter;
+    private CursorRecyclerViewAdapter mNewsAdapter;
     private SwipeRefreshLayout mSwipeRefreshLayout;
-    private TextView mEmptyList;
     private NewsUpdater mNewsUpdater;
 
     private static final int CURSOR_LOADER_ID = 2;
@@ -94,16 +98,19 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
         public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
             Log.i(LOG_TAG, "onLoadFinished");
             if (data == null || !data.moveToFirst()) {
-                mEmptyList.setText(R.string.no_news);
+
             } else {
-                mNewsCursorAdapter.swapCursor(data);
+                mNewsAdapter.changeCursor(data);
+                mNewsAdapter.notifyDataSetChanged();
             }
         }
 
         @Override
         public void onLoaderReset(Loader<Cursor> loader) {
-            mNewsCursorAdapter.swapCursor(null);
+            mNewsAdapter.swapCursor(null);
         }
+
+
     };
 
     @Nullable
@@ -112,15 +119,14 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
 
         View view = inflater.inflate(R.layout.newslist_fragment, container, false);
 
-        mListView = (ListView) view.findViewById(R.id.listview);
-        mListView.setOnItemClickListener(this);
+        mRecyclerView = (RecyclerView) view.findViewById(R.id.news_recycler_view);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
-        mNewsCursorAdapter = new NewsCursorAdapter(getActivity(), null);
-        mListView.setAdapter(mNewsCursorAdapter);
+        mNewsAdapter = new CursorRecyclerViewAdapter(getActivity(),null);
+        mRecyclerView.setAdapter(mNewsAdapter);
 
 
-        mEmptyList = (TextView) view.findViewById(R.id.empty);
-        mListView.setEmptyView(mEmptyList);
+
 
         mProcessBar = (ProgressBar) view.findViewById(R.id.loading_spinner);
         mProcessBar.setVisibility(View.GONE);
@@ -145,8 +151,198 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
         return view;
     }
 
+    private class NewsHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
+
+        private TextView mTitle;
+        private TextView mSource;
+        private TextView mDate;
+        private TextView mCategory;
+
+        public NewsHolder(LayoutInflater inflater, ViewGroup parent) {
+            super(inflater.inflate(R.layout.list_item, parent, false));
+
+            mTitle = (TextView) itemView.findViewById(R.id.title);
+            mSource = (TextView)itemView.findViewById(R.id.source);
+            mDate = (TextView)itemView.findViewById(R.id.date);
+            mCategory = (TextView) itemView.findViewById(R.id.category);
+
+            itemView.setOnClickListener(this);
+
+        }
+
+        public void bind(Cursor cursor){
+            mTitle.setText(cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_TITLE)));
+            int isRead = cursor.getInt(cursor.getColumnIndex(NewsContract.NewsEntry.COLUMN_ISREAD));
+            if (isRead == 0){
+                mTitle.setTextColor(getActivity().getResources().getColor(R.color.notRead));
+            }
+            else{
+                mTitle.setTextColor(getActivity().getResources().getColor(R.color.alreadyRead));
+            }
+            mSource.setText(cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_SOURCE)));
+
+            String strDate = cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_DATE));
+
+            mCategory.setText(cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_CATEGORY)));
+
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            dateFormat.setTimeZone(TimeZone.getDefault());
+            DateFormat dateFormatNew = new SimpleDateFormat("HH:mm dd-MM-yyyy", Locale.getDefault());
+            Date convertedDate = new Date();
+            try {
+                convertedDate = dateFormat.parse(strDate);
+            } catch (ParseException e) {
+                Log.e(LOG_TAG, "Parsing datetime failed", e);
+            }
+            mDate.setText(dateFormatNew.format(convertedDate));
+        }
+
+        @Override
+        public void onClick(View view) {
+            int lastClickedIndex = this.getAdapterPosition();
+            long itemID = mNewsAdapter.getItemId(lastClickedIndex);
+            ContentValues values = new ContentValues();
+            values.put(NewsContract.NewsEntry.COLUMN_ISREAD, 1);
+            getActivity().getContentResolver().update(
+                    Uri.withAppendedPath(NewsContract.NewsEntry.CONTENT_URI, String.valueOf(itemID))
+                    , values, null, null);
+            Intent intent = NewsPagerActivity.newIntent(getActivity(), itemID);
+            startActivity(intent);
+        }
+    }
+
+    private class CursorRecyclerViewAdapter extends RecyclerView.Adapter<NewsHolder> {
+
+        private Context mContext;
+
+        private Cursor mCursor;
+
+        private boolean mDataValid;
+
+        private int mRowIdColumn;
+
+        private DataSetObserver mDataSetObserver;
+
+        public CursorRecyclerViewAdapter(Context context, Cursor cursor) {
+            mContext = context;
+            mCursor = cursor;
+            mDataValid = cursor != null;
+            mRowIdColumn = mDataValid ? mCursor.getColumnIndex("_id") : -1;
+            mDataSetObserver = new NotifyingDataSetObserver();
+            if (mCursor != null) {
+                mCursor.registerDataSetObserver(mDataSetObserver);
+            }
+        }
+
+        public Cursor getCursor() {
+            return mCursor;
+        }
+
+        @Override
+        public int getItemCount() {
+            if (mDataValid && mCursor != null) {
+                return mCursor.getCount();
+            }
+            return 0;
+        }
+
+        @Override
+        public long getItemId(int position) {
+            if (mDataValid && mCursor != null && mCursor.moveToPosition(position)) {
+                return mCursor.getLong(mRowIdColumn);
+            }
+            return 0;
+        }
+
+        @Override
+        public void setHasStableIds(boolean hasStableIds) {
+            super.setHasStableIds(true);
+        }
+
+
+        @Override
+        public NewsHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            LayoutInflater inflater = LayoutInflater.from(getActivity());
+            return new NewsHolder(inflater,parent);
+        }
+
+        public void onBindViewHolder(NewsHolder viewHolder, Cursor cursor){
+            viewHolder.bind(cursor);
+        }
+
+
+        @Override
+        public void onBindViewHolder(NewsHolder viewHolder, int position) {
+            if (!mDataValid) {
+                throw new IllegalStateException("this should only be called when the cursor is valid");
+            }
+            if (!mCursor.moveToPosition(position)) {
+                throw new IllegalStateException("couldn't move cursor to position " + position);
+            }
+            onBindViewHolder(viewHolder, mCursor);
+        }
+
+        /**
+         * Change the underlying cursor to a new cursor. If there is an existing cursor it will be
+         * closed.
+         */
+        public void changeCursor(Cursor cursor) {
+            Cursor old = swapCursor(cursor);
+            if (old != null) {
+                old.close();
+            }
+        }
+
+        /**
+         * Swap in a new Cursor, returning the old Cursor.  Unlike
+         * {@link #changeCursor(Cursor)}, the returned old Cursor is <em>not</em>
+         * closed.
+         */
+        public Cursor swapCursor(Cursor newCursor) {
+            if (newCursor == mCursor) {
+                return null;
+            }
+            final Cursor oldCursor = mCursor;
+            if (oldCursor != null && mDataSetObserver != null) {
+                oldCursor.unregisterDataSetObserver(mDataSetObserver);
+            }
+            mCursor = newCursor;
+            if (mCursor != null) {
+                if (mDataSetObserver != null) {
+                    mCursor.registerDataSetObserver(mDataSetObserver);
+                }
+                mRowIdColumn = newCursor.getColumnIndexOrThrow("_id");
+                mDataValid = true;
+                notifyDataSetChanged();
+            } else {
+                mRowIdColumn = -1;
+                mDataValid = false;
+                notifyDataSetChanged();
+                //There is no notifyDataSetInvalidated() method in RecyclerView.Adapter
+            }
+            return oldCursor;
+        }
+
+        private class NotifyingDataSetObserver extends DataSetObserver {
+            @Override
+            public void onChanged() {
+                super.onChanged();
+                mDataValid = true;
+                notifyDataSetChanged();
+            }
+
+            @Override
+            public void onInvalidated() {
+                super.onInvalidated();
+                mDataValid = false;
+                notifyDataSetChanged();
+                //There is no notifyDataSetInvalidated() method in RecyclerView.Adapter
+            }
+        }
+    }
+
     private void updateNewsList() {
-        mEmptyList.setText("");
+
 
         ConnectivityManager cm =
                 (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -156,7 +352,6 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
                 activeNetwork.isConnectedOrConnecting();
         if (!isConnected) {
             mProcessBar.setVisibility(View.GONE);
-            mEmptyList.setText(R.string.no_connection);
             mSwipeRefreshLayout.setRefreshing(false);
             Toast.makeText(getActivity(), R.string.no_connection, Toast.LENGTH_LONG).show();
             return;
@@ -171,8 +366,7 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        Intent intent = NewsPagerActivity.newIntent(getActivity(), id);
-        startActivity(intent);
+
     }
 
     @Override
@@ -213,7 +407,7 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
                 editor.putString(CATEGORY, NewsUpdater.CATEGORIES[i]);
                 editor.commit();
 
-                mNewsCursorAdapter.swapCursor(null);
+                mNewsAdapter.swapCursor(null);
                 getActivity().getSupportLoaderManager().restartLoader(CURSOR_LOADER_ID, null, mCursorLoaderCallbacks);
             }
 

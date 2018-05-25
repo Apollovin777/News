@@ -35,6 +35,13 @@ public class CursorPagerAdapter extends FragmentStatePagerAdapter {
         return null;
     }
 
+    public long getItemId(int position){
+        if (mCursor.moveToPosition(position)) {
+            return mCursor.getLong(mCursor.getColumnIndex(NewsProvider.COL_ID));
+        }
+        return 0;
+    }
+
     @Override
     public int getCount() {
         if (mCursor != null) {
