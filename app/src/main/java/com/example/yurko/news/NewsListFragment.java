@@ -1,21 +1,22 @@
 package com.example.yurko.news;
 
-import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 
 import com.example.yurko.news.data.NewsContract.NewsEntry;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.DataSetObserver;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
-import android.preference.Preference;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -35,7 +36,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.ListView;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -43,17 +44,14 @@ import android.widget.Toast;
 
 import com.example.yurko.news.data.NewsContract;
 
-import java.net.URI;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
-public class NewsListFragment extends Fragment implements AdapterView.OnItemClickListener {
+public class NewsListFragment extends Fragment {
 
     private static final String LOG_TAG = "testing";
 
@@ -62,6 +60,7 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
     private CursorRecyclerViewAdapter mNewsAdapter;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private NewsUpdater mNewsUpdater;
+    private ThumbnailDownloader<NewsHolder> mThumbnailDownloader;
 
     private static final int CURSOR_LOADER_ID = 2;
     private static final String CATEGORY = "category";
@@ -86,11 +85,9 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
             SharedPreferences sPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
             String category = sPref.getString(CATEGORY, NewsUpdater.TOP_NEWS);
 
-
-            //Log.i(LOG_TAG + "Callbacks",category);
-                    loader = new CursorLoader(getContext(),
-                            Uri.withAppendedPath(NewsEntry.CONTENT_BY_CAT,category),
-                            projection, null,null, NewsEntry.COLUMN_DATE + " DESC");
+            loader = new CursorLoader(getContext(),
+                    Uri.withAppendedPath(NewsEntry.CONTENT_BY_CAT, category),
+                    projection, null, null, NewsEntry.COLUMN_DATE + " DESC");
             return loader;
         }
 
@@ -109,8 +106,6 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
         public void onLoaderReset(Loader<Cursor> loader) {
             mNewsAdapter.swapCursor(null);
         }
-
-
     };
 
     @Nullable
@@ -122,11 +117,8 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
         mRecyclerView = (RecyclerView) view.findViewById(R.id.news_recycler_view);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
-        mNewsAdapter = new CursorRecyclerViewAdapter(getActivity(),null);
+        mNewsAdapter = new CursorRecyclerViewAdapter(getActivity(), null);
         mRecyclerView.setAdapter(mNewsAdapter);
-
-
-
 
         mProcessBar = (ProgressBar) view.findViewById(R.id.loading_spinner);
         mProcessBar.setVisibility(View.GONE);
@@ -144,46 +136,44 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
         });
 
         getActivity().getSupportLoaderManager().initLoader(CURSOR_LOADER_ID, null, mCursorLoaderCallbacks);
-
-
         updateNewsList();
-
         return view;
     }
 
-    private class NewsHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
+    private class NewsHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
         private TextView mTitle;
         private TextView mSource;
         private TextView mDate;
-        private TextView mCategory;
+        //private TextView mCategory;
+        private ImageView mItemImageView;
 
         public NewsHolder(LayoutInflater inflater, ViewGroup parent) {
             super(inflater.inflate(R.layout.list_item, parent, false));
 
             mTitle = (TextView) itemView.findViewById(R.id.title);
-            mSource = (TextView)itemView.findViewById(R.id.source);
-            mDate = (TextView)itemView.findViewById(R.id.date);
-            mCategory = (TextView) itemView.findViewById(R.id.category);
+            mSource = (TextView) itemView.findViewById(R.id.source);
+            mDate = (TextView) itemView.findViewById(R.id.date);
+           // mCategory = (TextView) itemView.findViewById(R.id.category);
+            mItemImageView = (ImageView) itemView.findViewById(R.id.image_view);
 
             itemView.setOnClickListener(this);
 
         }
 
-        public void bind(Cursor cursor){
+        public void bind(Cursor cursor) {
             mTitle.setText(cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_TITLE)));
             int isRead = cursor.getInt(cursor.getColumnIndex(NewsContract.NewsEntry.COLUMN_ISREAD));
-            if (isRead == 0){
+            if (isRead == 0) {
                 mTitle.setTextColor(getActivity().getResources().getColor(R.color.notRead));
-            }
-            else{
+            } else {
                 mTitle.setTextColor(getActivity().getResources().getColor(R.color.alreadyRead));
             }
             mSource.setText(cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_SOURCE)));
 
             String strDate = cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_DATE));
 
-            mCategory.setText(cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_CATEGORY)));
+           // mCategory.setText(cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_CATEGORY)));
 
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
             dateFormat.setTimeZone(TimeZone.getDefault());
@@ -195,6 +185,10 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
                 Log.e(LOG_TAG, "Parsing datetime failed", e);
             }
             mDate.setText(dateFormatNew.format(convertedDate));
+        }
+
+        public void bindDrawable(Drawable drawable){
+            mItemImageView.setImageDrawable(drawable);
         }
 
         @Override
@@ -221,6 +215,8 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
 
         private int mRowIdColumn;
 
+        private int mRowImageColumn;
+
         private DataSetObserver mDataSetObserver;
 
         public CursorRecyclerViewAdapter(Context context, Cursor cursor) {
@@ -228,6 +224,7 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
             mCursor = cursor;
             mDataValid = cursor != null;
             mRowIdColumn = mDataValid ? mCursor.getColumnIndex("_id") : -1;
+
             mDataSetObserver = new NotifyingDataSetObserver();
             if (mCursor != null) {
                 mCursor.registerDataSetObserver(mDataSetObserver);
@@ -236,6 +233,10 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
 
         public Cursor getCursor() {
             return mCursor;
+        }
+
+        public boolean isDataValid(){
+            return mCursor != null;
         }
 
         @Override
@@ -254,6 +255,15 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
             return 0;
         }
 
+        public String getImageURL(int position){
+            if (isDataValid() && mCursor != null && mCursor.moveToPosition(position)) {
+                mRowImageColumn = mCursor.getColumnIndex(NewsEntry.COLUMN_URLTOIMAGE);
+                String temp = mCursor.getString(mRowImageColumn);
+                return temp;
+            }
+            return null;
+        }
+
         @Override
         public void setHasStableIds(boolean hasStableIds) {
             super.setHasStableIds(true);
@@ -263,10 +273,10 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
         @Override
         public NewsHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             LayoutInflater inflater = LayoutInflater.from(getActivity());
-            return new NewsHolder(inflater,parent);
+            return new NewsHolder(inflater, parent);
         }
 
-        public void onBindViewHolder(NewsHolder viewHolder, Cursor cursor){
+        public void onBindViewHolder(NewsHolder viewHolder, Cursor cursor) {
             viewHolder.bind(cursor);
         }
 
@@ -279,7 +289,14 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
             if (!mCursor.moveToPosition(position)) {
                 throw new IllegalStateException("couldn't move cursor to position " + position);
             }
+
+            Drawable placeholder = getResources().getDrawable(R.drawable.place);
+            viewHolder.bindDrawable(placeholder);
+
             onBindViewHolder(viewHolder, mCursor);
+            if (mCursor != null) {
+               mThumbnailDownloader.queueThumbnail(viewHolder, this.getImageURL(position));
+            }
         }
 
         /**
@@ -342,8 +359,6 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
     }
 
     private void updateNewsList() {
-
-
         ConnectivityManager cm =
                 (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
 
@@ -356,7 +371,7 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
             Toast.makeText(getActivity(), R.string.no_connection, Toast.LENGTH_LONG).show();
             return;
         }
-        if (mNewsUpdater != null){
+        if (mNewsUpdater != null) {
             mNewsUpdater = null;
             mNewsUpdater = new NewsUpdater(getContext());
         }
@@ -365,14 +380,35 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
     }
 
     @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
-    }
-
-    @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+
+        Handler responseHandler = new Handler();
+        mThumbnailDownloader = new ThumbnailDownloader<>(responseHandler);
+        mThumbnailDownloader.setThumbnailDownloadListener(
+                new ThumbnailDownloader.ThumbnailDownloadListener<NewsHolder>() {
+                    @Override
+                    public void onThumbnailDownloaded(NewsHolder newsHolder, Bitmap bitmap, String url) {
+                        Drawable drawable = new BitmapDrawable(getResources(),bitmap);
+                        newsHolder.bindDrawable(drawable);
+                        //addBitmapToMemoryCache(url,bitmap);
+                    }
+                });
+        mThumbnailDownloader.start();
+        mThumbnailDownloader.getLooper();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mThumbnailDownloader.quit();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mThumbnailDownloader.clearQueue();
     }
 
     @Override
@@ -391,16 +427,16 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
         SharedPreferences sPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
         String savedText = sPref.getString(CATEGORY, NewsUpdater.TOP_NEWS);
 
-        for(int i = 0; i < arrayCategories.length;i++){
-            if (NewsUpdater.CATEGORIES[i].equals(savedText)){
+        for (int i = 0; i < arrayCategories.length; i++) {
+            if (NewsUpdater.CATEGORIES[i].equals(savedText)) {
                 spinner.setSelection(i);
             }
         }
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                Log.i(LOG_TAG,"OnSpinnerItemClick");
-                Log.i(LOG_TAG,String.valueOf(i)+ " " + String.valueOf(l));
+                Log.i(LOG_TAG, "OnSpinnerItemClick");
+                Log.i(LOG_TAG, String.valueOf(i) + " " + String.valueOf(l));
 
                 SharedPreferences sPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
                 SharedPreferences.Editor editor = sPref.edit();
@@ -421,7 +457,6 @@ public class NewsListFragment extends Fragment implements AdapterView.OnItemClic
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         return super.onOptionsItemSelected(item);
-
     }
 
 

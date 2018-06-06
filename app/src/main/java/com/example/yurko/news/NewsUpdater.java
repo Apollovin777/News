@@ -65,7 +65,9 @@ public class NewsUpdater extends AsyncTask<Void,Void,Void>{
         categories.add(BUSINESS);
         categories.add(ENTERTAINMENT);
         categories.add(SCIENCE);
+        categories.add(SPORTS);
         categories.add(TECHNOLOGY);
+        categories.add(HEALTH);
         categories.add(TOP_NEWS);
         for (String cat: categories
              ) {

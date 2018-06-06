@@ -39,7 +39,7 @@ public class NewsCursorAdapter extends CursorAdapter {
         TextView title = (TextView) listItemView.findViewById(R.id.title);
         TextView source = (TextView)listItemView.findViewById(R.id.source);
         TextView date = (TextView)listItemView.findViewById(R.id.date);
-        TextView category = (TextView) listItemView.findViewById(R.id.category);
+        //TextView category = (TextView) listItemView.findViewById(R.id.category);
 
         title.setText(cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_TITLE)));
         int isRead = cursor.getInt(cursor.getColumnIndex(NewsContract.NewsEntry.COLUMN_ISREAD));
@@ -53,7 +53,7 @@ public class NewsCursorAdapter extends CursorAdapter {
 
         String strDate = cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_DATE));
 
-        category.setText(cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_CATEGORY)));
+        //category.setText(cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_CATEGORY)));
 
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
             dateFormat.setTimeZone(TimeZone.getDefault());

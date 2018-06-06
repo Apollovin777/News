@@ -6,7 +6,7 @@
     <string name="news_category">News category</string>
     <string-array name="cat_spinner_array">
         <item>Top news</item>
-        <item>Technology</item>
+        <!--<item>Technology</item>-->
         <item>Sports</item>
         <item>Science</item>
         <item>Health</item>
