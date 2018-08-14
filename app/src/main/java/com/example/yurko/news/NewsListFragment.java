@@ -1,5 +1,7 @@
 package com.example.yurko.news;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
 
@@ -7,6 +9,7 @@ import com.example.yurko.news.data.NewsContract.NewsEntry;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.DataSetObserver;
 import android.graphics.Bitmap;
@@ -17,6 +20,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.Preference;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -43,10 +47,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.yurko.news.data.NewsContract;
+import com.squareup.picasso.Picasso;
 
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -132,11 +138,16 @@ public class NewsListFragment extends Fragment {
             public void onRefresh() {
                 Log.i(LOG_TAG, "onRefresh called from SwipeRefreshLayout");
                 updateNewsList();
+
             }
         });
 
         getActivity().getSupportLoaderManager().initLoader(CURSOR_LOADER_ID, null, mCursorLoaderCallbacks);
-        updateNewsList();
+        //updateNewsList();
+
+
+
+
         return view;
     }
 
@@ -290,12 +301,21 @@ public class NewsListFragment extends Fragment {
                 throw new IllegalStateException("couldn't move cursor to position " + position);
             }
 
-            Drawable placeholder = getResources().getDrawable(R.drawable.place);
-            viewHolder.bindDrawable(placeholder);
+            //Drawable placeholder = getResources().getDrawable(R.drawable.place);
+            //viewHolder.bindDrawable(placeholder);
 
             onBindViewHolder(viewHolder, mCursor);
             if (mCursor != null) {
-               mThumbnailDownloader.queueThumbnail(viewHolder, this.getImageURL(position));
+
+
+                Picasso.get().
+                        load(this.getImageURL(position))
+                        .error(R.drawable.no_image_available)
+                        .into(viewHolder.mItemImageView)
+                ;
+
+
+               //mThumbnailDownloader.queueThumbnail(viewHolder, this.getImageURL(position));
             }
         }
 
@@ -384,31 +404,66 @@ public class NewsListFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
 
-        Handler responseHandler = new Handler();
-        mThumbnailDownloader = new ThumbnailDownloader<>(responseHandler);
-        mThumbnailDownloader.setThumbnailDownloadListener(
-                new ThumbnailDownloader.ThumbnailDownloadListener<NewsHolder>() {
-                    @Override
-                    public void onThumbnailDownloaded(NewsHolder newsHolder, Bitmap bitmap, String url) {
-                        Drawable drawable = new BitmapDrawable(getResources(),bitmap);
-                        newsHolder.bindDrawable(drawable);
-                        //addBitmapToMemoryCache(url,bitmap);
-                    }
-                });
-        mThumbnailDownloader.start();
-        mThumbnailDownloader.getLooper();
+        PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences, false);
+
+
+        SharedPreferences sharedPref =
+                PreferenceManager.getDefaultSharedPreferences(getContext());
+        Boolean isAutoUpdatesEnable = sharedPref.getBoolean
+                (getResources().getString(R.string.pref_key_auto_update), false);
+
+
+        AlarmManager alarmManager = (AlarmManager) getActivity().getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(getContext(), UpdateReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                getContext(),1, intent, 0);
+
+        boolean alarmUp = (PendingIntent.getBroadcast(getActivity(), 0,
+                intent,
+                PendingIntent.FLAG_NO_CREATE) != null);
+
+        if (isAutoUpdatesEnable){
+            if (!alarmUp) {
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(System.currentTimeMillis());
+                calendar.add(Calendar.MINUTE, 1);
+                alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(),
+                        pendingIntent);
+                Log.i("testing", "alarm enabled");
+            }
+        }
+        else{
+            if (alarmUp) {
+                alarmManager.cancel(pendingIntent);
+                Log.i("testing", "alarm disabled");
+            }
+        }
+
+//        Handler responseHandler = new Handler();
+//        mThumbnailDownloader = new ThumbnailDownloader<>(responseHandler,getContext());
+//        mThumbnailDownloader.setThumbnailDownloadListener(
+//                new ThumbnailDownloader.ThumbnailDownloadListener<NewsHolder>() {
+//                    @Override
+//                    public void onThumbnailDownloaded(NewsHolder newsHolder, Bitmap bitmap, String url) {
+//                        Drawable drawable = new BitmapDrawable(getResources(),bitmap);
+//                        newsHolder.bindDrawable(drawable);
+//                        //addBitmapToMemoryCache(url,bitmap);
+//                    }
+//                });
+//        mThumbnailDownloader.start();
+//        mThumbnailDownloader.getLooper();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mThumbnailDownloader.quit();
+      //  mThumbnailDownloader.quit();
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        mThumbnailDownloader.clearQueue();
+       // mThumbnailDownloader.clearQueue();
     }
 
     @Override
@@ -418,9 +473,12 @@ public class NewsListFragment extends Fragment {
         MenuItem item = menu.findItem(R.id.category_spinner);
         final Spinner spinner = (Spinner) item.getActionView();
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getActivity(),
-                R.array.cat_spinner_array, android.R.layout.simple_spinner_item);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                R.array.cat_spinner_array, R.layout.spinner_item);
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown);
+
         spinner.setAdapter(adapter);
+
+
 
         String[] arrayCategories = getActivity().getResources().getStringArray(R.array.cat_spinner_array);
 
@@ -456,7 +514,14 @@ public class NewsListFragment extends Fragment {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        return super.onOptionsItemSelected(item);
+        int itemId = item.getItemId();
+        switch (itemId){
+            case R.id.settings:
+                Intent settings = new Intent(getActivity(),SettingsActivity.class);
+                startActivity(settings);
+                break;
+        }
+        return true;
     }
 
 

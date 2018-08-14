@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+        android:title="Sync Information"
+        android:key="sync_category">
+
+        <CheckBoxPreference
+            android:key="auto_update"
+            android:summary="Enable or disable news auto update"
+            android:title="Enable auto update"
+            android:defaultValue="true"/>
+
+    </PreferenceCategory>
+</PreferenceScreen>

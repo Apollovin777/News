@@ -19,11 +19,25 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".NewsPagerActivity"></activity>
+        <activity android:name=".NewsPagerActivity" />
+
         <provider
-            android:authorities="com.example.yurko.news"
             android:name=".data.NewsProvider"
-            android:exported="false"/>
+            android:authorities="com.example.yurko.news"
+            android:exported="false" />
+
+        <service android:name=".UpdateNewsService" />
+
+        <activity android:name=".SettingsActivity" />
+
+        <receiver
+            android:name=".UpdateReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.yurko.news.UPDATE_NEWS"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

@@ -4,6 +4,12 @@
     <string name="no_news">There is no news</string>
     <string name="no_connection">No Internet connection.</string>
     <string name="news_category">News category</string>
+
+    <string name="pref_key_auto_update">auto_update</string>
+    <string name="auto_update_enabled">Enabled</string>
+    <string name="auto_update_disabled">Disabled</string>
+
+
     <string-array name="cat_spinner_array">
         <item>Top news</item>
         <!--<item>Technology</item>-->

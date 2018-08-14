@@ -5,4 +5,5 @@
     <color name="colorAccent">#FF4081</color>
     <color name="notRead">#000</color>
     <color name="alreadyRead">#aaa</color>
+    <color name="white">#fff</color>
 </resources>

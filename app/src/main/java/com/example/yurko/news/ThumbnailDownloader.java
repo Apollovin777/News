@@ -1,5 +1,6 @@
 package com.example.yurko.news;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
@@ -24,6 +25,7 @@ public class ThumbnailDownloader<T> extends HandlerThread {
     private ConcurrentMap<T, String> mRequestMap = new ConcurrentHashMap<>();
     private Handler mResponseHandler;
     private ThumbnailDownloadListener<T> mThumbnailDownloadListener;
+    private Context mContext;
 
 
     public interface ThumbnailDownloadListener<T> {
@@ -34,9 +36,10 @@ public class ThumbnailDownloader<T> extends HandlerThread {
         mThumbnailDownloadListener = listener;
     }
 
-    public ThumbnailDownloader(Handler responseHandler) {
+    public ThumbnailDownloader(Handler responseHandler, Context context) {
         super(TAG);
         mResponseHandler = responseHandler;
+        mContext = context;
     }
 
     @Override
@@ -52,7 +55,7 @@ public class ThumbnailDownloader<T> extends HandlerThread {
             public void handleMessage(Message msg) {
                 if (msg.what == MESSAGE_DOWNLOAD) {
                     T target = (T) msg.obj;
-                    Log.i(TAG, "Got a request for URL: " + mRequestMap.get(target));
+
                     handleRequest(target);
                 }
             }
@@ -63,13 +66,11 @@ public class ThumbnailDownloader<T> extends HandlerThread {
         try {
             final String url = mRequestMap.get(target);
 
-            if (url == null) {
-                return;
-            }
+            final Bitmap bitmap;
 
-            byte[] bytesBitmap = getUrlBytes(url);
-            final Bitmap bitmap = BitmapFactory.decodeByteArray(bytesBitmap, 0, bytesBitmap.length);
-            Log.i(TAG, "Bitmap created");
+                byte[] bytesBitmap = getUrlBytes(url);
+                bitmap = BitmapFactory.decodeByteArray(bytesBitmap, 0, bytesBitmap.length);
+
             mResponseHandler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -92,8 +93,10 @@ public class ThumbnailDownloader<T> extends HandlerThread {
     }
 
     public void queueThumbnail(T target, String url) {
-        Log.i(TAG, "Got a URL: " + url);
+
         if (url == null) {
+            Bitmap bitmap = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.no_image_available);
+            mThumbnailDownloadListener.onThumbnailDownloaded(target, bitmap, url);
             mRequestMap.remove(target);
         } else {
             mRequestMap.put(target, url);

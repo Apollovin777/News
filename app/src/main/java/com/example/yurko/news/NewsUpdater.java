@@ -2,6 +2,7 @@ package com.example.yurko.news;
 
 import android.content.ContentProvider;
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.res.Resources;
@@ -51,28 +52,31 @@ public class NewsUpdater extends AsyncTask<Void,Void,Void>{
     public static final String TOP_NEWS = "top_news";
     public static final String ALL_NEWS = "all_news";
 
-    public static final String[] CATEGORIES = {TOP_NEWS,TECHNOLOGY,SPORTS,SCIENCE,HEALTH,ENTERTAINMENT,BUSINESS,ALL_NEWS};
+    public static final String[] CATEGORIES = {TOP_NEWS,SPORTS,SCIENCE,HEALTH,ENTERTAINMENT,BUSINESS,ALL_NEWS};
 
     private Context mContext;
+    private int mInsertedNewsCount;
 
     public NewsUpdater(Context context) {
         mContext = context;
     }
 
-    public void updateNews(){
-        Status status = this.getStatus();
+    public int updateNews(){
+
+        mInsertedNewsCount = 0;
         List<String> categories = new ArrayList<>();
         categories.add(BUSINESS);
         categories.add(ENTERTAINMENT);
         categories.add(SCIENCE);
         categories.add(SPORTS);
-        categories.add(TECHNOLOGY);
+        //categories.add(TECHNOLOGY);
         categories.add(HEALTH);
         categories.add(TOP_NEWS);
         for (String cat: categories
              ) {
             fetchNews(cat);
         }
+        return mInsertedNewsCount;
     }
 
     private void fetchNews(String category) {
@@ -86,30 +90,10 @@ public class NewsUpdater extends AsyncTask<Void,Void,Void>{
         Uri.Builder uriBuilder = baseUri.buildUpon();
         uriBuilder.appendQueryParameter(COUNTRY, UKRAINE);
 
-        switch (category) {
-            case BUSINESS:
-                uriBuilder.appendQueryParameter(CATEGORY, BUSINESS);
-                break;
-            case ENTERTAINMENT:
-                uriBuilder.appendQueryParameter(CATEGORY, ENTERTAINMENT);
-                break;
-            case HEALTH:
-                uriBuilder.appendQueryParameter(CATEGORY, HEALTH);
-                break;
-            case SCIENCE:
-                uriBuilder.appendQueryParameter(CATEGORY, SCIENCE);
-                break;
-            case TECHNOLOGY:
-                uriBuilder.appendQueryParameter(CATEGORY, TECHNOLOGY);
-                break;
-            case SPORTS:
-                uriBuilder.appendQueryParameter(CATEGORY, SPORTS);
-                break;
-            case TOP_NEWS:
-                break;
-            default:
-                return null;
+        if (category != TOP_NEWS){
+            uriBuilder.appendQueryParameter(CATEGORY, category);
         }
+
         URL url = null;
         try {
             url = new URL(uriBuilder.toString());
@@ -178,12 +162,16 @@ public class NewsUpdater extends AsyncTask<Void,Void,Void>{
                 values.put(NewsContract.NewsEntry.COLUMN_CATEGORY, category);
                 values.put(NewsContract.NewsEntry.COLUMN_ISREAD,0);
                 ContentResolver resolver = mContext.getContentResolver();
-                resolver.insert(NewsContract.NewsEntry.CONTENT_URI, values);
+                Uri uri = resolver.insert(NewsContract.NewsEntry.CONTENT_URI, values);
+                long id = ContentUris.parseId(uri);
+                if(id != 0){
+                    mInsertedNewsCount++;
+                }
+
             }
         } catch (JSONException e) {
             Log.e(LOG_TAG, "Problem parsing the JSON results", e);
         }
-
     }
 
     private static String readFromStream(InputStream inputStream) throws IOException {
