@@ -1,27 +1,20 @@
 package com.example.yurko.news;
 
-import android.app.AlarmManager;
-import android.app.PendingIntent;
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 
 import com.example.yurko.news.data.NewsContract.NewsEntry;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.DataSetObserver;
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.preference.Preference;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -29,6 +22,8 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -52,7 +47,6 @@ import com.squareup.picasso.Picasso;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -66,7 +60,6 @@ public class NewsListFragment extends Fragment {
     private CursorRecyclerViewAdapter mNewsAdapter;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private NewsUpdater mNewsUpdater;
-    private ThumbnailDownloader<NewsHolder> mThumbnailDownloader;
 
     private static final int CURSOR_LOADER_ID = 2;
     private static final String CATEGORY = "category";
@@ -143,10 +136,6 @@ public class NewsListFragment extends Fragment {
         });
 
         getActivity().getSupportLoaderManager().initLoader(CURSOR_LOADER_ID, null, mCursorLoaderCallbacks);
-        //updateNewsList();
-
-
-
 
         return view;
     }
@@ -165,11 +154,10 @@ public class NewsListFragment extends Fragment {
             mTitle = (TextView) itemView.findViewById(R.id.title);
             mSource = (TextView) itemView.findViewById(R.id.source);
             mDate = (TextView) itemView.findViewById(R.id.date);
-           // mCategory = (TextView) itemView.findViewById(R.id.category);
+            // mCategory = (TextView) itemView.findViewById(R.id.category);
             mItemImageView = (ImageView) itemView.findViewById(R.id.image_view);
 
             itemView.setOnClickListener(this);
-
         }
 
         public void bind(Cursor cursor) {
@@ -184,7 +172,7 @@ public class NewsListFragment extends Fragment {
 
             String strDate = cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_DATE));
 
-           // mCategory.setText(cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_CATEGORY)));
+            // mCategory.setText(cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_CATEGORY)));
 
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
             dateFormat.setTimeZone(TimeZone.getDefault());
@@ -196,10 +184,6 @@ public class NewsListFragment extends Fragment {
                 Log.e(LOG_TAG, "Parsing datetime failed", e);
             }
             mDate.setText(dateFormatNew.format(convertedDate));
-        }
-
-        public void bindDrawable(Drawable drawable){
-            mItemImageView.setImageDrawable(drawable);
         }
 
         @Override
@@ -246,7 +230,7 @@ public class NewsListFragment extends Fragment {
             return mCursor;
         }
 
-        public boolean isDataValid(){
+        public boolean isDataValid() {
             return mCursor != null;
         }
 
@@ -266,7 +250,7 @@ public class NewsListFragment extends Fragment {
             return 0;
         }
 
-        public String getImageURL(int position){
+        public String getImageURL(int position) {
             if (isDataValid() && mCursor != null && mCursor.moveToPosition(position)) {
                 mRowImageColumn = mCursor.getColumnIndex(NewsEntry.COLUMN_URLTOIMAGE);
                 String temp = mCursor.getString(mRowImageColumn);
@@ -301,9 +285,6 @@ public class NewsListFragment extends Fragment {
                 throw new IllegalStateException("couldn't move cursor to position " + position);
             }
 
-            //Drawable placeholder = getResources().getDrawable(R.drawable.place);
-            //viewHolder.bindDrawable(placeholder);
-
             onBindViewHolder(viewHolder, mCursor);
             if (mCursor != null) {
 
@@ -313,9 +294,6 @@ public class NewsListFragment extends Fragment {
                         .error(R.drawable.no_image_available)
                         .into(viewHolder.mItemImageView)
                 ;
-
-
-               //mThumbnailDownloader.queueThumbnail(viewHolder, this.getImageURL(position));
             }
         }
 
@@ -404,66 +382,9 @@ public class NewsListFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
 
-        PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences, false);
+        PreferenceManager.setDefaultValues(getContext(), R.xml.preferences, false);
 
-
-        SharedPreferences sharedPref =
-                PreferenceManager.getDefaultSharedPreferences(getContext());
-        Boolean isAutoUpdatesEnable = sharedPref.getBoolean
-                (getResources().getString(R.string.pref_key_auto_update), false);
-
-
-        AlarmManager alarmManager = (AlarmManager) getActivity().getSystemService(Context.ALARM_SERVICE);
-        Intent intent = new Intent(getContext(), UpdateReceiver.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                getContext(),1, intent, 0);
-
-        boolean alarmUp = (PendingIntent.getBroadcast(getActivity(), 0,
-                intent,
-                PendingIntent.FLAG_NO_CREATE) != null);
-
-        if (isAutoUpdatesEnable){
-            if (!alarmUp) {
-                Calendar calendar = Calendar.getInstance();
-                calendar.setTimeInMillis(System.currentTimeMillis());
-                calendar.add(Calendar.MINUTE, 1);
-                alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(),
-                        pendingIntent);
-                Log.i("testing", "alarm enabled");
-            }
-        }
-        else{
-            if (alarmUp) {
-                alarmManager.cancel(pendingIntent);
-                Log.i("testing", "alarm disabled");
-            }
-        }
-
-//        Handler responseHandler = new Handler();
-//        mThumbnailDownloader = new ThumbnailDownloader<>(responseHandler,getContext());
-//        mThumbnailDownloader.setThumbnailDownloadListener(
-//                new ThumbnailDownloader.ThumbnailDownloadListener<NewsHolder>() {
-//                    @Override
-//                    public void onThumbnailDownloaded(NewsHolder newsHolder, Bitmap bitmap, String url) {
-//                        Drawable drawable = new BitmapDrawable(getResources(),bitmap);
-//                        newsHolder.bindDrawable(drawable);
-//                        //addBitmapToMemoryCache(url,bitmap);
-//                    }
-//                });
-//        mThumbnailDownloader.start();
-//        mThumbnailDownloader.getLooper();
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-      //  mThumbnailDownloader.quit();
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-       // mThumbnailDownloader.clearQueue();
+        ScheduleUpdates.setSchedule(getContext());
     }
 
     @Override
@@ -477,8 +398,6 @@ public class NewsListFragment extends Fragment {
         adapter.setDropDownViewResource(R.layout.spinner_dropdown);
 
         spinner.setAdapter(adapter);
-
-
 
         String[] arrayCategories = getActivity().getResources().getStringArray(R.array.cat_spinner_array);
 
@@ -515,11 +434,29 @@ public class NewsListFragment extends Fragment {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
-        switch (itemId){
+        switch (itemId) {
             case R.id.settings:
-                Intent settings = new Intent(getActivity(),SettingsActivity.class);
+                Intent settings = new Intent(getActivity(), SettingsActivity.class);
                 startActivity(settings);
                 break;
+            case R.id.refresh_news:
+                updateNewsList();
+                break;
+            case R.id.delete_all:
+                final ContentResolver resolver = getActivity().getContentResolver();
+
+                new AlertDialog.Builder(getContext())
+                        .setTitle("Confirmation")
+                        .setMessage("Do you really want to delete all news?")
+                        .setIcon(android.R.drawable.alert_light_frame)
+                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                int count = resolver.delete(NewsContract.NewsEntry.CONTENT_URI, null, null);
+                                Toast.makeText(getActivity(), count + " news deleted", Toast.LENGTH_SHORT).show();
+                                mNewsAdapter.swapCursor(null);
+                            }
+                        })
+                        .setNegativeButton(android.R.string.no, null).show();
         }
         return true;
     }

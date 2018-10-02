@@ -6,4 +6,8 @@
     <color name="notRead">#000</color>
     <color name="alreadyRead">#aaa</color>
     <color name="white">#fff</color>
+    <color name="pure_green">#0f0</color>
+
+
+
 </resources>

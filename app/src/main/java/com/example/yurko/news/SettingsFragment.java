@@ -27,6 +27,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
 
         setPreferenceSummary(sharedPreferences, key);
+        if(key.equals(getResources().getString(R.string.pref_key_auto_update))){
+            ScheduleUpdates.setSchedule(getContext());
+        }
     }
 
     private void setPreferenceSummary(SharedPreferences sharedPreferences, String key) {

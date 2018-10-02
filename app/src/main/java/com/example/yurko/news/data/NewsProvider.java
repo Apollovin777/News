@@ -26,6 +26,7 @@ public class NewsProvider extends ContentProvider {
     private static final int NEWS_ID = 101;
     private static final int NEWS_CATEGORY = 102;
 
+
     private NewsDbHelper mDbHelper;
 
     static {
@@ -115,7 +116,22 @@ public class NewsProvider extends ContentProvider {
 
     @Override
     public int delete(@NonNull Uri uri, @Nullable String selection, @Nullable String[] selectionArgs) {
-        return 0;
+        SQLiteDatabase database = mDbHelper.getReadableDatabase();
+        int count = 0;
+        int match = sUriMatcher.match(uri);
+        switch (match) {
+            case NEWS:
+                count = database.delete(NewsContract.NewsEntry.TABLE_NAME, selection,
+                        selectionArgs);
+                break;
+            case NEWS_ID:
+                selection = NewsContract.NewsEntry._ID + "=?";
+                selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
+                count = database.delete(NewsContract.NewsEntry.TABLE_NAME, selection,
+                        selectionArgs);
+                break;
+        }
+        return count;
     }
 
     @Override

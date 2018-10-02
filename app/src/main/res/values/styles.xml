@@ -9,5 +9,19 @@
         <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
     </style>
 
+    <style name="STheme" >
+        <item name="colorPrimary">#fff</item>
+        <item name="colorPrimaryDark">#0f0</item>
+        <item name="colorAccent">#f00</item>
+        <item name="colorControlActivated">#d0d</item>
+
+    </style>
+
+    <style name="SwitchCompatStyle" >
+        <item name="thumbTint">@drawable/switch_color</item>
+        <item name="trackTint">@drawable/switch_color</item>
+    </style>
+
+
 
 </resources>

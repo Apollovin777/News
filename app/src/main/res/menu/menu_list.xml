@@ -7,9 +7,16 @@
         app:actionViewClass="android.widget.Spinner"
         app:showAsAction="always" />
     <item
+        android:id="@+id/refresh_news"
+        android:title="Refresh"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/settings"
         android:title="Settings"
-        app:showAsAction="never"
-    />
+        app:showAsAction="never" />
 
+    <item
+        android:id="@+id/delete_all"
+        android:title="Delete All"
+        app:showAsAction="never" />
 </menu>

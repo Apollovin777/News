@@ -6,9 +6,11 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v7.app.NotificationCompat;
+import android.support.v7.preference.PreferenceManager;
 
 
 public class UpdateNewsService extends IntentService {
@@ -32,27 +34,34 @@ public class UpdateNewsService extends IntentService {
     private void updateNews(){
         NewsUpdater updater = new NewsUpdater(this);
         int newItentsCount = updater.updateNews();
-        if(newItentsCount > 0){
+        if(newItentsCount > 0) {
             Intent resultIntent = new Intent(this, NewsListActivity.class);
             PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, resultIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT);
 
 // Create Notification
-            NotificationCompat.Builder builder =
-                    (NotificationCompat.Builder) new NotificationCompat.Builder(this)
-                            .setSmallIcon(R.mipmap.ic_launcher)
-                            .setContentTitle("News")
-                            .setContentText("News list is updated.")
-                            .setContentIntent(resultPendingIntent)
-                            .setAutoCancel(true);
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+            boolean isNotificationEnabled = preferences.getBoolean(getResources().
+                    getString(R.string.pref_key_notification_show), true);
 
-            Notification notification = builder.build();
+            if (isNotificationEnabled) {
+                NotificationCompat.Builder builder =
+                        (NotificationCompat.Builder) new NotificationCompat.Builder(this)
+                                .setSmallIcon(R.mipmap.ic_launcher)
+                                .setContentTitle("News")
+                                .setContentText("News list is updated.")
+                                .setContentIntent(resultPendingIntent)
+                                .setAutoCancel(true);
+
+                Notification notification = builder.build();
 
 // Show Notification
-            NotificationManager notificationManager =
-                    (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            notificationManager.notify(1, notification);
+                NotificationManager notificationManager =
+                        (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                notificationManager.notify(1, notification);
+            }
         }
+
         stopSelf();
     }
 }
