@@ -42,11 +42,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.yurko.news.data.NewsContract;
+import com.example.yurko.news.data.Util;
 import com.squareup.picasso.Picasso;
 
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -175,11 +177,12 @@ public class NewsListFragment extends Fragment {
             // mCategory.setText(cursor.getString(cursor.getColumnIndexOrThrow(NewsContract.NewsEntry.COLUMN_CATEGORY)));
 
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-            dateFormat.setTimeZone(TimeZone.getDefault());
+            dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
             DateFormat dateFormatNew = new SimpleDateFormat("HH:mm dd-MM-yyyy", Locale.getDefault());
             Date convertedDate = new Date();
             try {
                 convertedDate = dateFormat.parse(strDate);
+
             } catch (ParseException e) {
                 Log.e(LOG_TAG, "Parsing datetime failed", e);
             }
@@ -384,7 +387,7 @@ public class NewsListFragment extends Fragment {
 
         PreferenceManager.setDefaultValues(getContext(), R.xml.preferences, false);
 
-        ScheduleUpdates.setSchedule(getContext());
+        Util.setSchedule(getContext());
     }
 
     @Override

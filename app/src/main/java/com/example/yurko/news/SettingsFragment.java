@@ -8,6 +8,8 @@ import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceScreen;
 import android.support.v7.preference.SwitchPreferenceCompat;
 
+import com.example.yurko.news.data.Util;
+
 public class SettingsFragment extends PreferenceFragmentCompat implements SharedPreferences.OnSharedPreferenceChangeListener{
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
@@ -28,7 +30,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
 
         setPreferenceSummary(sharedPreferences, key);
         if(key.equals(getResources().getString(R.string.pref_key_auto_update))){
-            ScheduleUpdates.setSchedule(getContext());
+            Util.setSchedule(getContext());
         }
     }
 

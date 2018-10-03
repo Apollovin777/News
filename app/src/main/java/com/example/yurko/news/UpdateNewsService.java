@@ -63,5 +63,6 @@ public class UpdateNewsService extends IntentService {
         }
 
         stopSelf();
+
     }
 }
