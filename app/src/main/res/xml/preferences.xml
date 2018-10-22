@@ -2,18 +2,26 @@
 <PreferenceScreen
     xmlns:android="http://schemas.android.com/apk/res/android"
     >
-
        <SwitchPreferenceCompat
             android:defaultValue="true"
             android:title="Enable auto update"
             android:key="auto_update"
-            android:theme="@style/STheme"
-             />
+            android:theme="@style/STheme"             />
+
+    <ListPreference
+        android:key="update_interval"
+        android:defaultValue="43200000"
+        android:dependency="auto_update"
+        android:title="Update every"
+        android:summary="Interval for auto update"
+        android:entries="@array/updatelistentries"
+        android:entryValues="@array/updatelistvalues" />
+
        <SwitchPreferenceCompat
            android:defaultValue="true"
            android:title="Show notification"
            android:key="show_notification"
-           android:theme="@style/SwitchCompatStyle"
+           android:theme="@style/SwitchCompatStyle"           />
 
-           />
+
 </PreferenceScreen>

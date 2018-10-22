@@ -4,7 +4,7 @@ android {
     compileSdkVersion 26
     defaultConfig {
         applicationId "com.example.yurko.news"
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 26
         versionCode 1
         versionName '0.02'

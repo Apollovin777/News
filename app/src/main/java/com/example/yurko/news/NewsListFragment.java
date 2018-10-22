@@ -1,5 +1,6 @@
 package com.example.yurko.news;
 
+import android.app.NotificationManager;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -53,6 +54,8 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import static android.content.Context.NOTIFICATION_SERVICE;
+
 public class NewsListFragment extends Fragment {
 
     private static final String LOG_TAG = "testing";
@@ -94,7 +97,7 @@ public class NewsListFragment extends Fragment {
 
         @Override
         public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-            Log.i(LOG_TAG, "onLoadFinished");
+            //Log.i(LOG_TAG, "onLoadFinished");
             if (data == null || !data.moveToFirst()) {
 
             } else {
@@ -372,11 +375,13 @@ public class NewsListFragment extends Fragment {
             Toast.makeText(getActivity(), R.string.no_connection, Toast.LENGTH_LONG).show();
             return;
         }
-        if (mNewsUpdater != null) {
-            mNewsUpdater = null;
-            mNewsUpdater = new NewsUpdater(getContext());
-        }
-        mNewsUpdater.execute();
+//        if (mNewsUpdater != null) {
+//            mNewsUpdater = null;
+//            mNewsUpdater = new NewsUpdater(getContext());
+//        }
+//        mNewsUpdater.execute();
+        Intent intent = new Intent(getActivity(),UPDNews.class);
+        getActivity().startService(intent);
         mSwipeRefreshLayout.setRefreshing(false);
     }
 
@@ -387,7 +392,11 @@ public class NewsListFragment extends Fragment {
 
         PreferenceManager.setDefaultValues(getContext(), R.xml.preferences, false);
 
-        Util.setSchedule(getContext());
+        Util.setSchedule(getContext(),false);
+
+        NotificationManager notificationManager =
+                (NotificationManager) getActivity().getSystemService(NOTIFICATION_SERVICE);
+        notificationManager.cancel(1);
     }
 
     @Override
@@ -460,6 +469,11 @@ public class NewsListFragment extends Fragment {
                             }
                         })
                         .setNegativeButton(android.R.string.no, null).show();
+                break;
+            case R.id.ViewLog:
+                Intent log = new Intent(getActivity(), com.example.yurko.news.Log.class);
+                startActivity(log);
+                break;
         }
         return true;
     }

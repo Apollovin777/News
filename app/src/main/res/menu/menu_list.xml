@@ -19,4 +19,8 @@
         android:id="@+id/delete_all"
         android:title="Delete All"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/ViewLog"
+        android:title="View Log"
+        app:showAsAction="never" />
 </menu>

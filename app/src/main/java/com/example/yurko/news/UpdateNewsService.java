@@ -11,6 +11,10 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v7.app.NotificationCompat;
 import android.support.v7.preference.PreferenceManager;
+import android.util.Log;
+
+import java.io.FileOutputStream;
+import java.util.Date;
 
 
 public class UpdateNewsService extends IntentService {
@@ -27,7 +31,21 @@ public class UpdateNewsService extends IntentService {
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
         synchronized (this){
+            Log.i("testing","UpdateNewsService");
+
+            String filename = "myfile";
+            Date date = new Date();
+            String fileContents = "Last job run: " + date.toString();
+            FileOutputStream outputStream;
+            try {
+                outputStream = openFileOutput(filename, getBaseContext().MODE_PRIVATE);
+                outputStream.write(fileContents.getBytes());
+                outputStream.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             updateNews();
+            Log.i("testing","UpdateNewsService_End");
         }
     }
 
