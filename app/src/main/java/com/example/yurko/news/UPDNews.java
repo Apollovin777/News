@@ -3,10 +3,6 @@ package com.example.yurko.news;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.content.ContentResolver;
-import android.content.ContentUris;
-import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -15,8 +11,6 @@ import android.support.v4.app.JobIntentService;
 import android.support.v7.app.NotificationCompat;
 import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
-
-import com.example.yurko.news.data.NewsContract;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -55,6 +49,13 @@ public class UPDNews extends JobIntentService {
     public static final String[] CATEGORIES = {TOP_NEWS,SPORTS,SCIENCE,HEALTH,ENTERTAINMENT,BUSINESS,ALL_NEWS};
 
     private int mInsertedNewsCount;
+    private AppDatabase mDB;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        mDB = AppDatabase.getInstance(getApplicationContext());
+    }
 
     @Override
     protected void onHandleWork(@NonNull Intent intent) {
@@ -197,23 +198,23 @@ public class UPDNews extends JobIntentService {
                 String description = newsItem.getString("description");
                 String date = newsItem.getString("publishedAt");
 
-                ContentValues values = new ContentValues();
-                values.put(NewsContract.NewsEntry.COLUMN_TITLE, title);
-                values.put(NewsContract.NewsEntry.COLUMN_AUTHOR, author);
-                values.put(NewsContract.NewsEntry.COLUMN_SOURCE, source);
-                values.put(NewsContract.NewsEntry.COLUMN_URL, newsUrl);
-                values.put(NewsContract.NewsEntry.COLUMN_URLTOIMAGE, urlToImage);
-                values.put(NewsContract.NewsEntry.COLUMN_DESCRIPTION, description);
-                values.put(NewsContract.NewsEntry.COLUMN_DATE, date);
-                values.put(NewsContract.NewsEntry.COLUMN_CATEGORY, category);
-                values.put(NewsContract.NewsEntry.COLUMN_ISREAD,0);
-                ContentResolver resolver = getBaseContext().getContentResolver();
-                Uri uri = resolver.insert(NewsContract.NewsEntry.CONTENT_URI, values);
-                long id = ContentUris.parseId(uri);
-                if(id != 0){
+                NewsEntry entry = new NewsEntry(
+                        author,
+                        title,
+                        description,
+                        newsUrl,
+                        urlToImage,
+                        source,
+                        DateConverter.toDate(date),
+                        category,
+                        false);
+
+                String checkURL = mDB.newsDAO().getNewsItemURL(newsUrl);
+
+                if(checkURL == null) {
+                    mDB.newsDAO().insertNewsEntry(entry);
                     mInsertedNewsCount++;
                 }
-
             }
         } catch (JSONException e) {
             Log.e(LOG_TAG, "Problem parsing the JSON results", e);

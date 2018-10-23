@@ -29,8 +29,6 @@
             android:authorities="com.example.yurko.news"
             android:exported="false" />
 
-        <service android:name=".UpdateNewsService" />
-
         <service
             android:name=".UpdateJobService"
             android:permission="android.permission.BIND_JOB_SERVICE" />
@@ -38,15 +36,6 @@
         <service android:name=".UPDNews" />
 
         <activity android:name=".SettingsActivity" />
-
-        <receiver
-            android:name=".UpdateReceiver"
-            android:enabled="true"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.example.yurko.news.UPDATE_NEWS" />
-            </intent-filter>
-        </receiver>
 
         <activity android:name=".Log"></activity>
     </application>
